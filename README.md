@@ -1,5 +1,5 @@
 # Moving Beyond Excel and Becoming More Data Science-y
-Resources from [Tim Wilson's](https://www.linkedin.com/in/tgwilson/) presentation: "Moving Beyond Excel and Becoming More Data Science-y"
+Resources from [Tim Wilson's](https://www.linkedin.com/in/tgwilson/) presentation: "Moving Beyond Excel and Becoming More Data Science-y." _[this will get linked to the slides eventually]_
 
 ## Books
 
@@ -12,14 +12,16 @@ Resources from [Tim Wilson's](https://www.linkedin.com/in/tgwilson/) presentatio
 
 * [The Measure Slack team](https://www.measure.chat/) -- a free, active, and growing community of analysts, with discussions organized into channels, so you can pick and choose the topics of most interest to you. Be sure to join the *#data-science* channel!
 * [Conductrics Blog](https://conductrics.com/blog/) -- this is where [Matt Gershoff](https://twitter.com/mgershoff) puts much of his writing. The posts can be long, and the material isn't necessarily easy, but Matt does his best to explain complex concepts that matter (or should matter!) when it comes to analytics and marketing
+* [Battle of the Data Science Venn Diagrams](https://www.kdnuggets.com/2016/10/battle-data-science-venn-diagrams.html) -- this is just the post where the sea of Venn diagrams early in the presentation came from; it's actually not that useful for growing ones skills in data science
 
 ## Code Examples
 
-These examples all use R because, well, that's what they were built with. A little creative Googling should turn up how to do the same thing with Python. These are simply posted within this Github repository:
+These examples all use R because, well, that's what they were built with. A little creative Googling should turn up how to do the same thing with Python. Unless linked elsewhere, these are simply posted within this Github repository:
 
 * 'adobe-rsid-traffic.R' -- visits and pageviews for all Adobe Analytics report suites for which a given set of user credentials has access
-* Network Diagram
-* Twitter Mining
+* Network Diagram [_in work_]
+* Twitter Mining [_in work_]
+* [Time-Normalized Traffic to Pages](http://www.dartistics.com/googleanalytics/int-time-normalized.html)
 
 ## Podcasts
 
