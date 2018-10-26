@@ -18,10 +18,10 @@ Resources from [Tim Wilson's](https://www.linkedin.com/in/tgwilson/) presentatio
 
 These examples all use R because, well, that's what they were built with. A little creative Googling should turn up how to do the same thing with Python. Unless linked elsewhere, these are simply posted within this Github repository:
 
-* 'adobe-rsid-traffic.R' -- visits and pageviews for all Adobe Analytics report suites for which a given set of user credentials has access
-* Network Diagram [_in work_]
+* `adobe-rsid-traffic.R` -- visits and pageviews for all Adobe Analytics report suites for which a given set of user credentials has access
+* `time-normalized-traffic.Rmd` -- unique pageviews for a series of pages "from the date of launch" rather than by the actual calendar date
+* `network-diagram.Rmd` -- creation of an interactive network map from a Google Sheets doc that describes data sources and the data flows between those systems
 * Twitter Mining [_in work_]
-* [Time-Normalized Traffic to Pages](http://www.dartistics.com/googleanalytics/int-time-normalized.html)
 
 ## Podcasts
 
@@ -35,8 +35,12 @@ These examples all use R because, well, that's what they were built with. A litt
 * If learning R and using Google Analytics, Mark Edmondson's [googleAnalyticsR](http://code.markedmondson.me/googleAnalyticsR/) is a very useful package (and is extensively documented)
 * [R for Marketing Research and Analytics (Use R!)](https://www.amazon.com/Marketing-Research-Analytics-Use/dp/3319144359/) by Chris Chapman and Elea McDonnell Feit
 
-
 ## MOOCs
+
+This is the one area where this page does not speak to my personal experience. I've taken a handful of online courses, but I'm not in a position to jump up and down about any of them as being the way to go. So, this list is just some of the courses that I've seen/heard that seem promising (and, who knows, that I may dive into at some point):
+
+* (edX) [Georgia Tech Online MS in Analytics](https://www.edx.org/masters/online-master-science-analytics-georgia-tech)
+* (edX) [University of California, San Diego Master of Data Science](https://www.edx.org/masters/online-master-data-science-uc-san-diego)
 
 
 

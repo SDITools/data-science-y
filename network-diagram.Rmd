@@ -1,0 +1,132 @@
+---
+title: "Network Exploration"
+output: html_notebook
+---
+
+Interactive view of an organization's data sources and the data flowing between them. This pulls from a Google Sheet. The Google Sheets document used below is at https://docs.google.com/spreadsheets/d/14QZbaKMNqGAGQpOPRZDZeHdb9H8kb19Vbv1VBItvpPs/edit?usp=sharing. You will want to make a copy of that and modify it for your own needs, publish and make public (it can be unlisted), and grab the ID from the URL and updated the `googlesheets_id` value below.
+
+## Basic Setup and Get the Data
+
+```{r setup, message=FALSE}
+
+# See http://kateto.net/network-visualization for some details. Ultimately, it's all hinging on
+# the visNetwork package, which has a number of different functions for adjusting the actual visualization.
+
+# Load libraries
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(tidyverse,         # Includes dplyr, ggplot2, and others; very key!
+               visNetwork,        # For actually creating the visualization
+               RColorBrewer,      # For generating a color palette
+               googlesheets)      # For retrieving the underlying data from Google Sheets
+
+# Get the ID for the sheet. You can pull this from the URL. The URL for the Google Shee used
+# here is at https://docs.google.com/spreadsheets/d/14QZbaKMNqGAGQpOPRZDZeHdb9H8kb19Vbv1VBItvpPs/edit?usp=sharing.
+# Make a copy of that and then replace the ID below. Note that the sheet need to be
+# *both* Public (unlisted is fine) AND "Published to web"
+googlesheets_id <- "14QZbaKMNqGAGQpOPRZDZeHdb9H8kb19Vbv1VBItvpPs"
+
+# Now, actually get the key for that ID
+googlesheets_key <- gs_key(googlesheets_id, lookup=FALSE)
+
+# Get the data
+links_raw <- gs_read(googlesheets_key, ws="Data Flows", verbose=FALSE)
+nodes_raw <- gs_read(googlesheets_key, ws="Systems", verbose=FALSE)
+
+```
+
+## Data Munging / Transformation
+
+```{r data-munging, message=FALSE}
+
+# Convert to network graphing ready objects. This is one set of edges (the data feeds)
+# and one set of nodes (the data sources)
+
+# The "links" are the "edges" (the lines connecting the different data sources).
+# This part of the script, essentially, renames the columns in the data table to
+# match the visNetwork() function's 'edges' argument requirements later in the script.
+# Of course, you could just name things that way in the underlying Google Sheet,
+# but underlying Google Sheets are rarely designed with that much friendliness.
+links <- links_raw %>% 
+
+  # Select the columns that are actually going to be used
+  select(from = From,
+         to = To)
+
+# The "nodes" are the actual data sources (the circles)
+nodes <- nodes_raw %>% 
+  select(id = System,
+         data_type = `Data Type`,
+         owner = Owner)
+
+####################
+# We'll size the nodes based on the number of data flows to/from them. The sizing
+# could be anything (it could be something to do with the size of the actual system, 
+# for instance), so this code can be tweaked accordingly.
+
+# Get the total feeds going *to* each data source
+nodes_to_links <- nodes %>%
+  inner_join(links, by = c(id = "to")) %>% 
+  group_by(id) %>% 
+  summarise(total_links_to = n())
+
+# Get the total feeds going *from* each data source
+nodes_from_links <- nodes %>%
+  inner_join(links, by = c(id = "from")) %>% 
+  group_by(id) %>% 
+  summarise(total_links_from = n())
+
+# Combine those together -- adding *to* and *from*
+nodes_link_counts <- nodes_to_links %>% 
+  full_join(nodes_from_links) %>% 
+  mutate(total_links_to = ifelse(is.na(total_links_to), 
+                                 0, total_links_to)) %>%       # Replace NAs with 0s for future math
+  mutate(total_links_from = ifelse(is.na(total_links_from), 
+                                   0, total_links_from)) %>%   # Replace NAs with 0s for future math
+  mutate(size = total_links_to + total_links_from) %>% 
+  select(id, size)
+
+# Join those back to the main nodes data
+nodes <- nodes %>% 
+  left_join(nodes_link_counts) %>% 
+  filter(!is.na(size)) %>%             # Remove orphaned nodes
+  mutate(size = 5 + size * 3)          # Scale the circle sizes (requires some fiddling)
+
+# Remove unused data frames
+rm(nodes_to_links, nodes_from_links, nodes_link_counts)
+
+```
+
+## Visualization
+
+```{r visualization, message=FALSE}
+
+# Add some more options
+nodes$shape <- "dot"             # Just use circles
+nodes$shadow <- FALSE            # Nodes will drop shadow
+nodes$title <- nodes$id          # Node title
+nodes$label <- nodes$id          # Node label
+nodes$borderWidth <- 0.5         # Node border width
+nodes$group <- nodes$data_type   # Use data type for the legend
+nodes$color.border <- "gray80"
+
+links$color <- "#BBBBBB"    # line color  
+links$arrows <- "middle"    # arrows: 'from', 'to', or 'middle'
+links$smooth <- TRUE        # should the edges be curved?
+links$shadow <- FALSE       # edge shadow
+
+# Generate the plot. The visGroups are a hack here. There's some risk that they won't
+# wind up being quite right if a new category gets introduced.
+viz_output <- visNetwork(nodes, links, width = "1024px", height = "768px") %>%
+  visOptions(highlightNearest = TRUE,
+             selectedBy = list(variable = "owner", main="Select System Owner")) %>% 
+  
+  visLayout(randomSeed = 5003, improvedLayout = TRUE) %>% 
+  visLegend(position = "right")
+  
+  # visLegend(position = "right", zoom=FALSE, width=0.12, useGroups = FALSE)
+
+viz_output
+
+visSave(viz_output, "data_ecosystem_visualization.html", selfcontained = TRUE, background = "white")
+
+```
