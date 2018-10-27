@@ -20,8 +20,8 @@ These examples all use R because, well, that's what they were built with. A litt
 
 * `adobe-rsid-traffic.R` -- visits and pageviews for all Adobe Analytics report suites for which a given set of user credentials has access
 * `time-normalized-traffic.Rmd` -- unique pageviews for a series of pages "from the date of launch" rather than by the actual calendar date
-* `network-diagram.Rmd` -- creation of an interactive network map from a Google Sheets doc that describes data sources and the data flows between those systems
-* `twitter-follower-analysis.Rmd` -- this actually includes some bonus exploration/visualizations of followers beyond what was shown in the presentation
+* `network-diagram.Rmd` -- creation of an interactive network map from a Google Sheets doc that describes data sources and the data flows between those systems. For an example of the output, see [http://rpubs.com/tgwilson/data-ecosystem-visualization](http://rpubs.com/tgwilson/data-ecosystem-visualization).
+* `twitter-follower-analysis.Rmd` -- this actually includes some bonus exploration/visualizations of followers beyond what was shown in the presentation. For an example of the output, see [http://rpubs.com/tgwilson/twitter-follower-analysis-mymo](http://rpubs.com/tgwilson/twitter-follower-analysis-mymo).
 
 ## Podcasts
 

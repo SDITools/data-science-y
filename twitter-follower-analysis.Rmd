@@ -97,6 +97,8 @@ The code below has three basic steps:
 
 There are some limits to the Twitter API, so if you are analyzing a user with more than 15,000 (I think) followers, you will need to update the code to split up the Twitter requests into batches. And, you will need to have a billing account enabled on your Google App account with limits adjusted for the Geocoding API.
 
+This will take a while to run -- primarily for the Geocoding API lookups. But, you'll be able to watch the lookups flow by in the console as the data gets pulled.
+
 ```{r get_user_detail, message=FALSE, warning=FALSE, results='asis'}
 
 # Get a list of all followers of the user. The default number of followers that will be returned
@@ -114,9 +116,6 @@ followers_details <- followers_details %>%
          favorite_count = ifelse(is.na(favorite_count), 0, favorite_count)) %>% 
   mutate(favorites_count = favourites_count + favorite_count) %>% 
   select(-favourites_count, -favorite_count)
-
-# Output how many users are being analyzed
-cat(paste0("The following assessment covers the ", nrow(followers_details), " ", tolower(main_label), "."))
 
 ############
 # Get the Geo Data
