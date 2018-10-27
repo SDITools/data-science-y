@@ -1,5 +1,5 @@
 # Moving Beyond Excel and Becoming More Data Science-y
-Resources from [Tim Wilson's](https://www.linkedin.com/in/tgwilson/) presentation: "Moving Beyond Excel and Becoming More Data Science-y." _[this will get linked to the slides eventually]_
+Resources from [Tim Wilson's](https://www.linkedin.com/in/tgwilson/) presentation: [Moving Beyond Excel and Becoming More Data Science-y](https://docs.google.com/presentation/d/1nDa89s7ElfOz65E1hBwkndz0zDnlZsYgScGzapgZw5E/edit?usp=sharing).
 
 ## Books
 
@@ -21,7 +21,7 @@ These examples all use R because, well, that's what they were built with. A litt
 * `adobe-rsid-traffic.R` -- visits and pageviews for all Adobe Analytics report suites for which a given set of user credentials has access
 * `time-normalized-traffic.Rmd` -- unique pageviews for a series of pages "from the date of launch" rather than by the actual calendar date
 * `network-diagram.Rmd` -- creation of an interactive network map from a Google Sheets doc that describes data sources and the data flows between those systems
-* Twitter Mining [_in work_]
+* `twitter-follower-analysis.Rmd` -- this actually includes some bonus exploration/visualizations of followers beyond what was shown in the presentation
 
 ## Podcasts
 
@@ -35,12 +35,15 @@ These examples all use R because, well, that's what they were built with. A litt
 * If learning R and using Google Analytics, Mark Edmondson's [googleAnalyticsR](http://code.markedmondson.me/googleAnalyticsR/) is a very useful package (and is extensively documented)
 * [R for Marketing Research and Analytics (Use R!)](https://www.amazon.com/Marketing-Research-Analytics-Use/dp/3319144359/) by Chris Chapman and Elea McDonnell Feit
 
-## MOOCs
+## MOOCs and Other Online Learning
 
 This is the one area where this page does not speak to my personal experience. I've taken a handful of online courses, but I'm not in a position to jump up and down about any of them as being the way to go. So, this list is just some of the courses that I've seen/heard that seem promising (and, who knows, that I may dive into at some point):
 
-* (edX) [Georgia Tech Online MS in Analytics](https://www.edx.org/masters/online-master-science-analytics-georgia-tech)
-* (edX) [University of California, San Diego Master of Data Science](https://www.edx.org/masters/online-master-data-science-uc-san-diego)
+* [DataCamp](https://www.datacamp.com/) -- folks pretty much rave about this as a resource for learning Python, R, SQL, and the like
+* [Codecademy](https://www.codecademy.com/) -- intro courses to R, Python, SQL, and other languages. The free versions go through entire courses, but without as much and as deep practice exercises as a pro membership. These are good "get the basics" courses, but typically are not enough to really start working with any given language or topic.
+* [Coursera](https://www.coursera.org/) -- free (and/or relatively low cost) multi-week courses on a range of topics; these courses can be hard, and they won't provide a direct bridge to digital analytics, but my initial exposure to R was actually through a Coursera course.
+* [Georgia Tech Online MS in Analytics](https://www.edx.org/masters/online-master-science-analytics-georgia-tech) -- this is a paid online program from edX, but the result is a real degree
+* [University of California, San Diego Master of Data Science](https://www.edx.org/masters/online-master-data-science-uc-san-diego) -- likewise, this is a paid program from edX
 
 
 

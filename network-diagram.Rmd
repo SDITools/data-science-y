@@ -123,10 +123,7 @@ viz_output <- visNetwork(nodes, links, width = "1024px", height = "768px") %>%
   visLayout(randomSeed = 5003, improvedLayout = TRUE) %>% 
   visLegend(position = "right")
   
-  # visLegend(position = "right", zoom=FALSE, width=0.12, useGroups = FALSE)
-
+# Output the visualization
 viz_output
-
-visSave(viz_output, "data_ecosystem_visualization.html", selfcontained = TRUE, background = "white")
 
 ```

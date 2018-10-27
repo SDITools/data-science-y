@@ -1,0 +1,418 @@
+---
+title: "Twitter Follower Analysis"
+output: html_notebook
+---
+
+This script attempts to get some insight about the users who follow a particular account on Twitter.
+
+The report looks at that data several ways:
+
+* The number of users assessed
+* A scatterplot of the number of followers each of those users has and the total times by each user.
+* A word cloud of the _user profile descriptions_ for those users
+* A map of the locations _when that data is available and decipherable_; the number of followers is used to show the number of followers for each of those users (or this could be by color)
+* A detailed list of the users: user's name, username, number of followers, number of times listed, and location (when listed)
+
+## Important Configuration Information
+
+To run this yourself, you do need to do a little bit of setup within Twitter and Google, as well as specify the user you're working with.
+
+Pay close attention to the first block of the code below, as you will want to adjust that based on what you set up. 
+
+The two things you will need to set up are:
+
+* [A Twitter App](https://apps.twitter.com/) -- this is free and, ultimately, you will need the app name, a app key, and app secret
+* [A Google App with the Geocoding API Enabled](https://developers.google.com/maps/documentation/geocoding/start) -- ultimately, you will just get a key for this
+
+The values you get from the above need to get updated in the code below.
+
+```{r setup, message=FALSE, warning=FALSE}
+
+# Set the base account you are looking to analyze
+tw_account <- "mymo"
+
+# You need an OLDER version of ggmap (2.7). So, uncomment and run the following. See
+# https://stackoverflow.com/questions/36175529/getting-over-query-limit-after-one-request-with-geocode
+# for details.
+# devtools::install_github("dkahle/ggmap")
+
+# Load libraries
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(rtweet,          # accessing the Twitter API
+               tidyverse,       # well... we just always need this
+               kableExtra,      # nicer table formatting
+               ggmap,           # visualizing the maps
+               scales,          # getting commas into numbers... :-(
+               tm,              # text mining
+               SnowballC,       # text mining
+               wordcloud,       # word cloud generation
+               DT,              # Interactive tables
+               RColorBrewer,    # For palettes in the word cloud
+               plotly)          # interactive visualizations
+
+# Set the max # of users to do geo lookups on
+geo_count <- 6000
+
+# Label for what this is
+main_label <- paste0("Followers of @",tw_account)
+
+##############
+# Get the Twitter app credentials. The code below assumes the app name, key, and secret
+# are stored in a .Renviron file. But, you can simply replace the "Sys.getenv()" statements
+# with hardcoded strings if you wish.
+
+# Name assigned to created app
+tw_appname <- Sys.getenv("TWITTER_APPNAME")
+
+# Key and Secret
+tw_key <- Sys.getenv("TWITTER_KEY")
+tw_secret <- Sys.getenv("TWITTER_SECRET")
+
+# Create the token
+tw_token <- create_token(
+    app = tw_appname,
+    consumer_key = tw_key,
+    consumer_secret = tw_secret)
+
+###############
+# Get the Google Maps (Geocoding API) credentials. You can query that something like 2,500
+# times/day for free, but it's also pretty cheap to up the limits there for a pretty nominal
+# cost. Like the Twitter app credentials, you can just hardcode that key if you desire.
+
+# Google Maps API Key
+gmaps_key <- Sys.getenv("GOOGLE_MAPS_KEY")
+
+# Now, register with those credentials
+register_google(key = gmaps_key)
+
+```
+
+# Get the Data
+
+The code below has three basic steps:
+
+1. Pull a list of all of the followers of the user specified in the earlier code
+2. Pull the profile details for each of those users
+3. Attempt to get the latitude and longitude for each of the followers based on the "Location" value they entered for their profile
+
+There are some limits to the Twitter API, so if you are analyzing a user with more than 15,000 (I think) followers, you will need to update the code to split up the Twitter requests into batches. And, you will need to have a billing account enabled on your Google App account with limits adjusted for the Geocoding API.
+
+```{r get_user_detail, message=FALSE, warning=FALSE, results='asis'}
+
+# Get a list of all followers of the user. The default number of followers that will be returned
+# is 5,000 max. You can up this by adding an "n=" argument below, but check the ?get_followers 
+# documentation to be ensure you understand the ramifications.
+user_followers <- get_followers(tw_account, token = tw_token)
+
+# Get the user details for each of those followers
+followers_details <-  lookup_users(user_followers$user_id, parse = TRUE, token = tw_token)
+
+# There seems to be both favourites_count and favorite_count. Documentation is a little 
+# limited, so we're just going to add them together
+followers_details <- followers_details %>% 
+  mutate(favourites_count = ifelse(is.na(favourites_count), 0, favourites_count),
+         favorite_count = ifelse(is.na(favorite_count), 0, favorite_count)) %>% 
+  mutate(favorites_count = favourites_count + favorite_count) %>% 
+  select(-favourites_count, -favorite_count)
+
+# Output how many users are being analyzed
+cat(paste0("The following assessment covers the ", nrow(followers_details), " ", tolower(main_label), "."))
+
+############
+# Get the Geo Data
+############
+
+# Function to try to figure out the location. This won't be perfect, but, hopefully, will
+# get a good enough chunk. We're going to rely on the Google Maps API for this -- it'll do the
+# best it can with the location entered. To avoid weird OVER_QUERY_LIMIT use v2.7 and an
+# API key: https://stackoverflow.com/questions/36175529/getting-over-query-limit-after-one-request-with-geocode
+
+get_lat_lon <- function(location){
+  
+  # If the location is null, then don't even try
+  if(is.na(location)){
+    lon_lat <- data.frame(lon = NA, lat = NA)
+  } else {
+    lon_lat <- geocode(location, source="google", override_limit = 7000)
+  }
+  
+  # Return the longitude and latitude
+  lon_lat
+}
+
+
+# Process the followers_details locations. A chunk of these will come back with no data. This
+# bit of code may run for a bit depending on how many followers are being analyzed.
+geo_detail <- map_dfr(followers_details$location, get_lat_lon)
+
+# Check that the results are inside the continental U.S. and flag the ones that are as TRUE.
+# This is just based on a rectangle, so some bit of Canada and Mexico will sneak in.
+geo_detail <- geo_detail %>% 
+  mutate(continental_us = ifelse(lon < -66.9513812 & 
+                                   lon > -124.7844079 & 
+                                   lat < 49.3457868 & 
+                                   lat > 24.7433195, 
+                                 TRUE, FALSE))
+
+# Add those values into followers_details
+followers_details$longitude <- geo_detail$lon
+followers_details$latitude <- geo_detail$lat
+followers_details$continental_us <- geo_detail$continental_us
+followers_details$`# of Followers` <- followers_details$followers_count
+
+
+
+```
+
+## How Many Followers / How Many Favorites
+
+The following is an illustration of _how many followers_ the users included in this analysis have, as well as how many _total times their tweets have been favorited_. 
+
+```{r follower_count, fig.height = 5.5, fig.width = 9.5, echo = FALSE, warning=FALSE, message=FALSE}
+
+# Base plot. We're going to do both linear scales and log scales versions. So, this is the "base plot,"
+# which we'll then add onto for the two variations.
+gg_followers_tweets_base <- ggplot(followers_details, 
+                                   mapping = aes(x=followers_count, y=favorites_count)) + 
+    geom_point(colour = "#2A76A0", alpha = 0.6, stroke = 0, size=2) +
+  theme_light() +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 14),
+        plot.subtitle = element_text(hjust = 0.5, size = 11),
+        axis.line = element_line(),
+        axis.ticks = element_blank(),
+        axis.text = element_text(size = 10, colour = "gray30"),
+        axis.title = element_text(face = "bold", size = 12),
+        panel.grid.major = element_line(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        legend.position = "top")
+
+# Linear scales version
+gg_followers_tweets_linear <- gg_followers_tweets_base +
+  scale_y_continuous(expand = c(0,0), limits = c(0, max(followers_details$favorites_count, na.rm=TRUE) * 1.01), label=comma) +
+  scale_x_continuous(expand = c(0,0), limits = c(0, max(followers_details$followers_count, na.rm=TRUE) * 1.02), label=comma) +
+  labs(title = paste0("All Followers of @", tw_account),
+       x = "# of Followers the User Has",
+       y = "# of Times the User's Tweets Favorited")
+
+# Output the plot
+gg_followers_tweets_linear
+
+# Try this with a log scale
+gg_followers_tweets_log <- gg_followers_tweets_base + 
+  scale_y_log10(label = comma) + 
+  scale_x_log10(label = comma) +
+  labs(title = paste0("All Followers of @", tw_account, " (Log Scales)"),
+       x = "# of Followers the User Has",
+       y = "# of Times the User's Tweets Favorited")
+
+# Output the plot
+gg_followers_tweets_log
+
+```
+
+
+## How the Users Describe Themselves
+
+The following is a word cloud of the descriptions users included in this analysis in their user profile. The two bits of cleanup performed are stopword removal and pushing everything to lowercase.
+
+```{r wordcloud, fig.height = 6.5, fig.width = 9.5, echo = FALSE, warning=FALSE, message=FALSE}
+
+# See: http://www.sthda.com/english/wiki/text-mining-and-word-cloud-fundamentals-in-r-5-simple-steps-you-should-know
+
+# Make a corpus of a sample of the descriptions. If there are less than 25000 followers being evaluated, then we can just
+# use them all. Hacky code to do that. 
+if(nrow(followers_details) > 25000){
+  set.seed(1234)
+  all_descriptions <- sample_n(followers_details, size = 25000) %>% 
+    select(description) %>% 
+    VectorSource() %>% Corpus()} else {
+      all_descriptions <- followers_details %>% 
+        select(description) %>% 
+        VectorSource() %>% Corpus()}
+
+# Replace all of the "<NA>" values with a space
+toSpace <- content_transformer(function (x , pattern ) gsub(pattern, " ", x))
+all_descriptions <- tm_map(all_descriptions, toSpace, "<NA>")
+
+# Convert the text to lower case
+all_descriptions <- tm_map(all_descriptions, content_transformer(tolower))
+
+# Remove numbers
+all_descriptions <- tm_map(all_descriptions, removeNumbers)
+
+# Remove English common stopwords
+all_descriptions <- tm_map(all_descriptions, removeWords, stopwords("english"))
+
+# Remove your own stop words if you want. Specify your stopwords as a character vector
+# and then uncomment the operation below.
+# all_descriptions <- tm_map(all_descriptions, removeWords, c("blabla1", "blabla2"))
+
+# Remove punctuations
+all_descriptions <- tm_map(all_descriptions, removePunctuation)
+
+# Eliminate extra white spaces
+all_descriptions <- tm_map(all_descriptions, stripWhitespace)
+
+# Text stemming. If you want to stem the terms, simply uncomment the 
+# code below.
+# all_descriptions <- tm_map(all_descriptions, stemDocument)
+
+# Create a Document-Term Matrix
+dtm <- TermDocumentMatrix(all_descriptions)
+m <- as.matrix(dtm)
+v <- sort(rowSums(m),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+# head(d, 10)
+
+# Create the word cloud
+set.seed(1234)
+wordcloud(words = d$word, freq = d$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0,
+          colors=brewer.pal(8, "Dark2"))
+
+```
+
+## Where Users Are Located
+
+The following uses the location users entered into their Twitter profile -- interpreted to a specific location. Note that this is not a _required_ value in Twitter, so this only includes users where a value is entered for their location (and that location can be deciphered by the Google Maps Geocoding API).
+
+```{r geo_viz, fig.height = 6.5, fig.width = 9.5, echo = FALSE, warning=FALSE, message=FALSE, results='asis'}
+
+# Set the theme for the maps
+theme_map <- theme_light() +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 14),
+        plot.subtitle = element_text(hjust = 0.5, size = 11),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title = element_blank(),
+        panel.grid = element_blank(),
+        panel.border = element_blank(),
+        legend.position = "none")
+
+# Get the total followers and the numer of geo-ID'd followers
+total_followers <- nrow(followers_details)
+geo_ided_count <- filter(followers_details, !is.na(longitude)) %>% nrow()
+geo_ided_count_us <- filter(followers_details, continental_us == TRUE) %>% nrow()
+
+# Load the worldwide map
+base_map_ww <- map_data("world")
+
+# Create the worldwide map
+gg_ww <- ggplot() + 
+  geom_map(data = base_map_ww, map = base_map_ww,
+           aes(x = long, y = lat, map_id = region),
+           fill = "gray95", color = "white") +
+  geom_point(data = followers_details,
+             aes(x = longitude, y = latitude),
+             colour = "#2A76A0", alpha = 0.6) +
+  labs(title = paste("Top Followers of @", tw_account, " (Based on Followers)"),
+       subtitle = paste0("Location Identified for ", format(geo_ided_count, big.mark=","), " of ", 
+                         paste0(format(total_followers, big.mark=","), " Total Followers Included"))) +
+  guides(fill = guide_legend(title="# of Followers")) +
+  theme_map
+
+# Output the plot
+gg_ww
+
+# Filter the data to be just U.S.
+followers_details_us <- filter(followers_details, continental_us == TRUE)
+
+# Load the U.S. map
+base_map_us <- map_data("state")
+
+gg_us <- ggplot() + 
+  geom_map(data = base_map_us, map = base_map_us,
+                    aes(x = long, y = lat, map_id = region),
+           fill = "gray95", color = "white") +
+  geom_point(data = followers_details_us,
+             aes(x = longitude, y = latitude, size = `# of Followers`, username = screen_name),
+             colour = "#2A76A0", alpha = 0.6) +
+  labs(title = paste0("The Top ", format(geo_ided_count_us, big.mark = ","), " ~U.S. Followers of @", 
+                      tw_account, " (Based on Followers, When Location Available)")) +
+  guides(fill = guide_legend(title="# of Followers")) +
+  scale_size_continuous(labels = comma, trans="log") +
+  theme_map
+
+# Output the U.S. Plot
+gg_us
+
+```
+
+## Interactive Map(s)
+
+Below are a couple of _interactive_ versions of the above maps. The U.S. map still shows followers who are outside the U.S. a bit, but it's close.
+
+```{r geo_viz_interactive, fig.height = 6.5, fig.width = 9.5, warning=FALSE, message=FALSE, results='asis'}
+
+# See https://plot.ly/r/reference/#scattergeo for details -- especially if you want to swap out and
+# do different geographic regions (see the "Scope" and "Projections" at that link)
+
+# Interactive world map
+
+# Establish the base world map
+world_map <- list(
+  scope = 'world',
+  projection = list(type = 'orthographic'),
+  showland = TRUE,
+  landcolor = toRGB("gray95"),
+  subunitwidth = 1,
+  countrywidth = 1,
+  subunitcolor = toRGB("white"),
+  countrycolor = toRGB("white")
+)
+
+# Create the world map and output it
+plot_world <- plot_geo(followers_details, sizes = c(1, 250)) %>%
+  add_markers(
+    x = ~longitude, y = ~latitude, size = ~log(`# of Followers`), hoverinfo = "text",
+    text = followers_details$screen_name) %>% 
+  layout(geo = world_map)
+
+plot_world
+
+# Interactive U.S. map
+
+# Set the details for the base map
+us_map <- list(
+  scope = 'usa',
+  projection = list(type = 'albers usa'),
+  showland = TRUE,
+  landcolor = toRGB("gray95"),
+  subunitwidth = 1,
+  countrywidth = 1,
+  subunitcolor = toRGB("white"),
+  countrycolor = toRGB("white")
+)
+
+# Create the interactive map
+plot_us <- plot_geo(followers_details, locationmode = 'USA-states', sizes = c(1, 250)) %>%
+  add_markers(
+    x = ~longitude, y = ~latitude, size = ~log(`# of Followers`), hoverinfo = "text",
+    text = followers_details$screen_name) %>%
+  layout(geo = us_map)
+
+plot_us
+
+```
+
+
+
+## List of Followers
+
+The following is a sortable/searchable table of the list of followers.
+
+```{r follower_table, fig.height = 5.5, fig.width = 9.5, echo = FALSE, warning=FALSE, message=FALSE}
+
+# Make a limited version of the followers details that we'll then output as an interactive table
+followers_details_display <- followers_details %>% 
+ select(`Screen Name` = screen_name, Location = location, Description = description, 
+         Followers = followers_count, Tweets = statuses_count, Favorites = favorites_count) %>% 
+  arrange(-Followers)
+
+# Output an interactive data table
+datatable(followers_details_display, rownames=FALSE) %>% 
+  formatRound(c("Followers", "Tweets", "Favorites"), digits = 0)
+
+```
