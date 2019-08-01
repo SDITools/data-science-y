@@ -23,10 +23,15 @@ These examples all use R because, well, that's what they were built with. A litt
 * `network-diagram.Rmd` -- creation of an interactive network map from a Google Sheets doc that describes data sources and the data flows between those systems. For an example of the output, see [http://rpubs.com/tgwilson/data-ecosystem-visualization](http://rpubs.com/tgwilson/data-ecosystem-visualization).
 * `twitter-follower-analysis.Rmd` -- this actually includes some bonus exploration/visualizations of followers beyond what was shown in the presentation. For an example of the output, see [http://rpubs.com/tgwilson/twitter-follower-analysis-mymo](http://rpubs.com/tgwilson/twitter-follower-analysis-mymo).
 
+## Examples without Code
+
+There are a number of examples of doing data-science-y work with Google Analytics data _without_ writing any code at [https://sditools.github.io/ga-and-r-examples/](https://sditools.github.io/ga-and-r-examples/).
+
 ## Podcasts
 
 * [The Digital Analytics Power Hour](https://analyticshour.io)
 * [This Week in Machine Learning and AI](https://twimlai.com/)
+* [Not So Standard Deviations](http://nssdeviations.com/)
 
 ## Diving into Coding
 
